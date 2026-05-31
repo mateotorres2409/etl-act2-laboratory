@@ -22,6 +22,7 @@ def setup_logger(log_filename: str) -> logging.Logger:
 
 logger = setup_logger("ingestion.log")
 
+
 # ==========================================
 # 2. LÓGICA DE EXTRACCIÓN (FUENTE EXTERNA)
 # ==========================================
@@ -69,9 +70,47 @@ def generate_external_taxonomy(output_path: str):
         logger.error(f"Fallo crítico durante la generación de la taxonomía: {str(e)}")
 
 # ==========================================
+# 2. LÓGICA DE EXTRACCIÓN (FUENTE DANE)
+# ==========================================
+def generate_dane_mapping(output_path: str):
+    """
+    (Extracción) Genera el diccionario de homologación entre Causas Globales y DANE.
+    Basado en la lógica de negocio descubierta por el equipo.
+    """
+    logger.info("Generando diccionario de homologación Global-DANE...")
+    
+    # El diccionario de tu compañero convertido en un Dataset de mapeo
+    mapeo_causas = {
+        "Tuberculosis": "102 TUBERCULOSIS, INCLUSIVE SECUELAS",
+        "HIV/AIDS": "108 ENFERMEDAD POR EL VIH/SIDA",
+        "Diarrheal diseases": "101 ENFERMEDADES INFECCIOSAS INTESTINALES",
+        "Lower respiratory infections": "109 INFECCIONES RESPIRATORIAS AGUDAS",
+        "Meningitis": "105 MENINGITIS",
+        "Hepatitis": "107 HEPATITIS VIRICA",
+        "Stomach cancer": "201 TUMOR MALIGNO DEL ESTOMAGO",
+        "Colon and rectum cancer": "202 TUMOR MALIGNO DE LOS ORGANOS DIGESTIVOS Y DEL PERITONEO, EXCEPTO ESTOMAGO Y COLON",
+        "Breast cancer": "208 TUMOR MALIGNO DE LA MAMA",
+        "Cervical cancer": "209 TUMOR MALIGNO DEL CUELLO DEL UTERO",
+        "Prostate cancer": "210 TUMOR MALIGNO DE LA PROSTATA",
+        "Cardiovascular diseases": "303 ENFERMEDADES ISQUEMICAS DEL CORAZON",
+        "Diabetes mellitus": "601 DIABETES MELLITUS",
+        "Chronic kidney disease": "612 ENFERMEDADES SISTEMA URINARIO",
+        "Road injuries": "501 ACC. TRANSPORTE TERRESTRE, INCLUSIVE SECUELAS",
+        "Interpersonal violence": "512 AGRESIONES (HOMICIDIOS), INCLUSIVE SECUELAS",
+        "Self-harm": "511 LESIONES AUTOINFLIGIDAS INTENC.(SUICIDIOS), INCL. SECUELAS",
+        "Drowning": "506 AHOGAMIENTO Y SUMERSION ACCIDENTALES",
+        "Falls": "503 CAIDAS"
+    }
+    
+    df_map = pd.DataFrame(list(mapeo_causas.items()), columns=['cause_global', 'cause_dane'])
+    df_map.to_csv(output_path, index=False)
+    logger.info(f"Mapeo DANE guardado en {output_path}")
+
+# ==========================================
 # 3. EJECUCIÓN MAIN
 # ==========================================
 if __name__ == '__main__':
     logger.info("--- EJECUTANDO INGESTA (EXTRACCIÓN) - CAMINO 2 ---")
     generate_external_taxonomy("data/external/who_disease_taxonomy.csv")
+    generate_dane_mapping("data/external/dane_mapping.csv")
     logger.info("--- EXTRACCIÓN FINALIZADA ---")

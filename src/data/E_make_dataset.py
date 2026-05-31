@@ -31,9 +31,6 @@ def generate_external_taxonomy(output_path: str):
     (Extracción de Datos Maestros - MDM) 
     Simula la integración con un sistema de gestión de datos maestros (Master Data Management).
     Construye y exporta un catálogo físico basado en la estructura taxonómica de la OMS (CIE-10).
-    
-    Este archivo actúa como la "Segunda Fuente de Datos" exigida por la arquitectura de negocio,
-    permitiendo agrupar la granularidad de enfermedades en macro-categorías epidemiológicas.
     """
     path = Path(output_path)
     logger.info("Iniciando extracción/generación del dataset externo de taxonomía OMS...")

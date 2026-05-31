@@ -1,40 +1,73 @@
 import pandas as pd
-import wbgapi as wb
 import logging
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+# ==========================================
+# 1. FUNCIÓN DE OBSERVABILIDAD
+# ==========================================
+def setup_logger(log_filename: str) -> logging.Logger:
+    Path("logs").mkdir(parents=True, exist_ok=True)
+    log_path = f"logs/{log_filename}"
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_path, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    return logging.getLogger(__name__)
 
-def fetch_world_bank_data(indicator: str, output_path: str, year: int):
+logger = setup_logger("ingestion.log")
+
+# ==========================================
+# 2. LÓGICA DE EXTRACCIÓN (FUENTE EXTERNA)
+# ==========================================
+def generate_external_taxonomy(output_path: str):
     """
-    (Extracción) Descarga datos del Banco Mundial de forma idempotente.
+    (Extracción) Genera el dataset externo de clasificación de la OMS.
+    Clasifica las enfermedades en Transmisibles, No Transmisibles y Lesiones.
     """
     path = Path(output_path)
-    if path.exists():
-        logger.info(f"Los datos externos ya existen en {path}. Omitiendo descarga.")
-        return
-        
-    logger.info(f"Conectando a API del Banco Mundial. Indicador: {indicator}...")
-    try:
-        # Extraemos datos crudos del BM
-        df_wb = wb.data.DataFrame(indicator, time=year, labels=True).reset_index()
-        df_wb.to_csv(path, index=False)
-        logger.info(f"Extracción exitosa. Guardado en {path}")
-    except Exception as e:
-        logger.error(f"Error en la extracción: {str(e)}")
-
-if __name__ == '__main__':
-    logger.info("--- INICIANDO EXTRACCIÓN (HITO 1) ---")
+    logger.info("Iniciando extracción/generación del dataset externo de taxonomía OMS...")
     
-    # 1. Validar que el archivo local crudo exista
-    if not Path("data/raw/causeofdeath.csv").exists():
-        logger.warning("Falta causeofdeath.csv en data/raw/")
+    try:
+        # Extraemos las causas únicas de nuestro archivo base para que el cruce sea perfecto
+        df_base = pd.read_csv("data/raw/causeofdeath.csv", sep=';', decimal=',')
+        unique_causes = df_base['Cause of death or injury'].unique()
         
-    # 2. Extraer fuente adicional: Gasto en salud (% del PIB)
-    fetch_world_bank_data(
-        indicator='SH.XPD.CHEX.GD.ZS', 
-        output_path="data/external/health_expenditure_2017.csv", 
-        year=2017
-    )
+        # Diccionarios de clasificación OMS
+        communicable = ['Tuberculosis', 'HIV/AIDS', 'Diarrheal diseases', 'Lower respiratory infections', 
+                        'Malaria', 'Zika virus', 'Guinea worm disease', 'Typhoid and paratyphoid', 
+                        'Invasive Non-typhoidal Salmonella (iNTS)', 'Other intestinal infectious diseases']
+        injuries = ['Road injuries', 'Conflict and terrorism', 'Self-harm', 'Interpersonal violence', 
+                    'Drowning', 'Fire, heat, and hot substances', 'Poisonings', 'Exposure to forces of nature']
+        
+        def classify_disease(cause):
+            if any(c.lower() in cause.lower() for c in communicable):
+                return 'Transmisibles (Infecciosas/Maternas)'
+            elif any(i.lower() in cause.lower() for i in injuries):
+                return 'Lesiones (Accidentes/Violencia)'
+            else:
+                return 'No Transmisibles (Crónicas)'
+
+        df_taxonomy = pd.DataFrame({'cause': unique_causes})
+        df_taxonomy['who_category'] = df_taxonomy['cause'].apply(classify_disease)
+        
+        # Guarda físicamente la fuente externa
+        Path("data/external").mkdir(parents=True, exist_ok=True)
+        df_taxonomy.to_csv(path, index=False)
+        logger.info(f"Dataset externo guardado exitosamente en {path}")
+        
+    except Exception as e:
+        logger.error(f"Fallo crítico durante la generación de la taxonomía: {str(e)}")
+
+# ==========================================
+# 3. EJECUCIÓN MAIN
+# ==========================================
+if __name__ == '__main__':
+    logger.info("--- EJECUTANDO INGESTA (EXTRACCIÓN) - CAMINO 2 ---")
+    generate_external_taxonomy("data/external/who_disease_taxonomy.csv")
     logger.info("--- EXTRACCIÓN FINALIZADA ---")

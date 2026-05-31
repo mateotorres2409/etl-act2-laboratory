@@ -1,42 +1,49 @@
 # Análisis Global de Causas de Mortalidad (ETL & Visualización)
 
-Este proyecto implementa un pipeline de datos (ETL) robusto en Python para analizar las causas de mortalidad a nivel mundial (2017) y su evolución histórica. El desarrollo integra datos sociodemográficos externos para establecer correlaciones multivariadas, aplicando principios de arquitectura limpia, observabilidad y reproducibilidad.
+Este proyecto implementa un pipeline de datos (ETL) robusto en Python para analizar las causas de mortalidad a nivel mundial, su impacto porcentual y su evolución histórica (2010-2017). Aplicando principios de *Data Engineering* y arquitectura limpia, el sistema unifica, transforma y enriquece los datos base con una taxonomía médica externa para generar visualizaciones analíticas avanzadas.
 
 ## 📋 Tabla de Contenidos
-1. [Descripción del Proyecto](#descripción-del-proyecto)
+1. [Descripción del Proyecto y Metodología](#descripción-del-proyecto-y-metodología)
 2. [Arquitectura del Directorio](#arquitectura-del-directorio)
 3. [Fuentes de Datos](#fuentes-de-datos)
 4. [Requisitos Previos](#requisitos-previos)
 5. [Instalación y Configuración](#instalación-y-configuración)
-6. [Ejecución del Pipeline](#ejecución-del-pipeline)
-7. [Observabilidad y Logs](#observabilidad-y-logs)
-8. [Autor](#autor)
+6. [Ejecución del Pipeline (Paso a Paso)](#ejecución-del-pipeline)
+7. [Observabilidad y Trazabilidad](#observabilidad-y-trazabilidad)
+8. [Entregables Visuales](#entregables-visuales)
 
-## 🎯 Descripción del Proyecto
-El objetivo principal es unificar, limpiar y estructurar el dataset base de causas de muerte, enriqueciéndolo con indicadores del Banco Mundial (Gasto en Salud como % del PIB). A partir de estos datos transformados, se generan visualizaciones estratégicas que responden a:
-- Principales causas de muerte a nivel global.
-- Tendencias de crecimiento o decrecimiento (2010-2017).
-- Correlación entre la inversión en salud pública y las tasas de mortalidad por enfermedades específicas.
+## 🎯 Descripción del Proyecto y Metodología
+Ante la naturaleza inmutable del dataset original (el cual cuenta únicamente con una desagregación a nivel "Global"), se diseñó una arquitectura de datos orientada a la causa de muerte. 
+
+Para cumplir con el enriquecimiento de datos multivariado, el pipeline genera dinámicamente un catálogo basado en la **Taxonomía de la Organización Mundial de la Salud (OMS)**, clasificando las enfermedades en:
+- Transmisibles (Infecciosas/Maternas)
+- No Transmisibles (Crónicas)
+- Lesiones (Accidentes/Violencia)
+
+A partir del cruce de estas fuentes, se construyen matrices de riesgo y análisis de carga global de morbilidad.
 
 ## 📂 Arquitectura del Directorio
-El proyecto sigue el estándar *Cookiecutter Data Science* para garantizar la separación lógica entre datos crudos, código fuente y análisis exploratorio:
+El proyecto sigue el estándar *Cookiecutter Data Science*, garantizando la separación de responsabilidades (SRP) entre extracción, transformación y visualización:
 
 ```text
 etl-act2-laboratory/
 │
 ├── data/
 │   ├── raw/               # Dataset original inmutable (causeofdeath.csv)
-│   ├── external/          # Datos extraídos vía API (Banco Mundial)
-│   └── processed/         # Datos limpios y unificados listos para análisis
+│   ├── external/          # Catálogo OMS autogenerado (who_disease_taxonomy.csv)
+│   └── processed/         # Dataset final unificado (analytical_dataset.csv)
 │
-├── logs/                  # Archivos de trazabilidad de los scripts (.log)
+├── logs/                  # Archivos de observabilidad (ingestion.log, processing.log)
 │
-├── notebooks/             # Jupyter Notebooks para Análisis Exploratorio (EDA)
+├── reports/
+│   └── figures/           # Gráficas exportadas en alta resolución (.png)
 │
 ├── src/
-│   ├── __init__.py
-│   ├── data/              # Scripts de ingesta y limpieza (make_dataset.py)
-│   └── visualization/     # Scripts para generación de gráficos
+│   ├── data/              
+│   │   ├── E_make_dataset.py       # (Extracción) Genera la fuente externa
+│   │   └── T_process_dataset.py    # (Transformación) Pivota y cruza los datos
+│   └── visualization/     
+│       └── visualize.py            # Generación de gráficos y reportes
 │
 ├── requirements.txt       # Dependencias del proyecto
 └── README.md              # Documentación principal

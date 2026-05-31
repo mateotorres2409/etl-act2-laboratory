@@ -76,7 +76,6 @@ def generate_dane_mapping(output_path: str):
     """
     logger.info("Generando diccionario de homologación Global-DANE...")
     
-    # El diccionario de tu compañero convertido en un Dataset de mapeo
     mapeo_causas = {
         "Tuberculosis": "102 TUBERCULOSIS, INCLUSIVE SECUELAS",
         "HIV/AIDS": "108 ENFERMEDAD POR EL VIH/SIDA",
